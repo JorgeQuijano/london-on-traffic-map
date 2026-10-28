@@ -5,7 +5,7 @@
     "serviceUrl": "https://maps.london.ca/server/rest/services/OpenData/OpenData_Transportation/MapServer/21",
     "licenseUrl": "https://london.maps.arcgis.com/sharing/rest/content/items/e31458fd0c7e41dd9f93144a9550781d/data"
   },
-  "fetchedAt": "2026-10-28T03:11:25.136Z",
+  "fetchedAt": "2026-10-28T03:40:51.175Z",
   "sourceModified": "2026-03-18T13:55:39.000Z",
   "dataVintage": "2023-10-04",
   "segmentCount": 1971,
