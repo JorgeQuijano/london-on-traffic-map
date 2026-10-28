@@ -1,0 +1,57 @@
+{
+  "source": {
+    "name": "City of London Open Data — Traffic Volumes (AADT)",
+    "datasetUrl": "https://opendata.london.ca/datasets/6e425a70e4e24d2ab47e099c4720a80c_21/about",
+    "serviceUrl": "https://maps.london.ca/server/rest/services/OpenData/OpenData_Transportation/MapServer/21",
+    "licenseUrl": "https://london.maps.arcgis.com/sharing/rest/content/items/e31458fd0c7e41dd9f93144a9550781d/data"
+  },
+  "fetchedAt": "2026-10-28T03:11:25.136Z",
+  "sourceModified": "2026-03-18T13:55:39.000Z",
+  "dataVintage": "2023-10-04",
+  "segmentCount": 1971,
+  "streetCount": 425,
+  "totalLengthKm": 853.3,
+  "dailyVehicleKm": 8496902,
+  "highestVolume": {
+    "street": "Cheapside St",
+    "aadt": 110000
+  },
+  "busiestStreet": {
+    "street": "Wellington Rd",
+    "avgAadt": 34871,
+    "peakAadt": 41000,
+    "segmentCount": 21
+  },
+  "classCounts": {
+    "Urban Thoroughfare": 168,
+    "Rural Thoroughfare": 105,
+    "Neighbourhood Street": 158,
+    "Rural Connector": 48,
+    "Civic Boulevard": 458,
+    "Neighbourhood Connector": 805,
+    "Private Miscellaneous": 2,
+    "Ramps": 23,
+    "Main Street": 53,
+    "Expressway": 41,
+    "Rapid Transit Boulevard": 105,
+    "Provincial Highway": 5
+  },
+  "levelCounts": {
+    "low": 448,
+    "moderate": 525,
+    "elevated": 431,
+    "high": 400,
+    "very-high": 167
+  },
+  "bounds": [
+    [
+      -81.39032,
+      42.827125
+    ],
+    [
+      -81.108553,
+      43.068967
+    ]
+  ],
+  "notes": "AADT is the annual average number of vehicles passing a point each day, not live traffic. Street averages are weighted by segment length."
+}

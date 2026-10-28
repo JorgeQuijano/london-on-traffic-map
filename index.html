@@ -1,68 +1,278 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>London Ontario Traffic Map</title>
-    
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <!-- Google Fonts -->
+    <title>London Traffic Map — Daily Traffic Volumes</title>
+    <meta name="description" content="Explore annual average daily traffic volumes on streets in London, Ontario. Search streets, filter by volume and road type, and find the busiest corridors.">
+    <meta name="theme-color" content="#f2eee4">
+    <meta property="og:title" content="London Traffic Map — Daily Traffic Volumes">
+    <meta property="og:description" content="Annual average daily traffic on every mapped road segment in London, Ontario. Search streets, filter, and compare the busiest corridors.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jorgequijano.github.io/london-on-traffic-map/">
+    <meta name="color-scheme" content="light dark">
+
+    <script>
+        // Set the theme before first paint to avoid a light-mode flash.
+        try {
+            const storedTheme = localStorage.getItem('london-traffic-theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.dataset.theme =
+                storedTheme === 'dark' || storedTheme === 'light'
+                    ? storedTheme
+                    : prefersDark
+                      ? 'dark'
+                      : 'light';
+
+            const themeColor = document.querySelector('meta[name="theme-color"]');
+            if (themeColor) {
+                themeColor.content = document.documentElement.dataset.theme === 'dark' ? '#0d0f11' : '#f2eee4';
+            }
+        } catch {
+            document.documentElement.dataset.theme = 'light';
+        }
+    </script>
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23171512'/%3E%3Crect x='22' y='12' width='20' height='40' rx='6' fill='none' stroke='%23f2eee4' stroke-width='3'/%3E%3Ccircle cx='32' cy='22' r='2.6' fill='%23ff5b5b'/%3E%3Ccircle cx='32' cy='32' r='2.6' fill='%23ffb000'/%3E%3Ccircle cx='32' cy='42' r='2.6' fill='%2321d07a'/%3E%3C/svg%3E">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🚗 London Ontario Traffic</h1>
-            <p>Daily traffic volume by street</p>
-        </header>
-        
-        <div class="controls">
-            <div class="filter-group">
-                <label for="traffic-filter">Traffic Level:</label>
-                <select id="traffic-filter">
-                    <option value="all">All Traffic</option>
-                    <option value="low">Low (0-5,000)</option>
-                    <option value="medium">Medium (5,000-15,000)</option>
-                    <option value="high">High (15,000+)</option>
-                </select>
+    <div class="app">
+        <aside class="sidebar" id="sidebar" aria-label="Traffic controls and rankings">
+            <div class="sidebar-top">
+                <div class="brand">
+                    <div class="brand-mark" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="7" y="2.5" width="10" height="19" rx="3"/>
+                            <circle cx="12" cy="7" r="1.5" fill="#ff5b5b" stroke="none"/>
+                            <circle cx="12" cy="12" r="1.5" fill="#ffb000" stroke="none"/>
+                            <circle cx="12" cy="17" r="1.5" fill="#21d07a" stroke="none"/>
+                        </svg>
+                    </div>
+                    <div class="brand-text">
+                        <p class="eyebrow">London · Ontario</p>
+                        <h1>Traffic Map</h1>
+                    </div>
+                    <button class="icon-btn theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark theme" title="Switch theme">
+                        <svg class="icon-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M20 14.5A8 8 0 0 1 9.5 4 7 7 0 1 0 20 14.5Z"/>
+                        </svg>
+                        <svg class="icon-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="4"/>
+                            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+                        </svg>
+                    </button>
+                    <button class="icon-btn sidebar-close" id="sidebar-close" type="button" aria-label="Close panel">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                            <path d="m6 6 12 12M18 6 6 18"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <p class="intro">
+                    Annual average daily traffic (AADT) on <strong id="intro-segments">every</strong> mapped
+                    road segment. Search a street or click any road to see its volume.
+                </p>
+
+                <div class="stats" aria-label="Network summary">
+                    <div class="stat" title="Named streets with at least one visible segment">
+                        <span class="stat-value" id="stat-streets">—</span>
+                        <span class="stat-label">Streets</span>
+                    </div>
+                    <div class="stat" title="Visible road segments in the City dataset">
+                        <span class="stat-value" id="stat-segments">—</span>
+                        <span class="stat-label">Segments</span>
+                    </div>
+                    <div class="stat" title="Vehicle-kilometres travelled per day across visible segments (AADT × segment length)">
+                        <span class="stat-value" id="stat-vkt">—</span>
+                        <span class="stat-label">Veh-km / day</span>
+                    </div>
+                </div>
+
+                <div class="busiest" title="Street with the highest length-weighted average AADT in the current view">
+                    <span class="busiest-label">Busiest street</span>
+                    <span class="busiest-value">
+                        <strong id="stat-busiest">—</strong>
+                        <span id="stat-busiest-value"></span>
+                    </span>
+                </div>
             </div>
-            <button id="reset-view" class="btn">Reset View</button>
-        </div>
-        
-        <div id="map"></div>
-        
-        <div class="legend">
-            <h3>Daily Traffic Volume</h3>
-            <div class="legend-items">
-                <div class="legend-item">
-                    <span class="color-box low"></span>
-                    <span>Low (0-5K)</span>
+
+            <form class="search" id="search-form" role="search">
+                <label class="sr-only" for="street-search">Search for a street</label>
+                <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7"/>
+                    <path d="m20 20-3.5-3.5"/>
+                </svg>
+                <input id="street-search" type="text" list="street-options"
+                       placeholder="Search a street, e.g. Oxford St E"
+                       autocomplete="off" spellcheck="false" enterkeyhint="search">
+                <button class="clear-btn" id="clear-search" type="button" aria-label="Clear street selection" hidden>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                        <path d="m6 6 12 12M18 6 6 18"/>
+                    </svg>
+                </button>
+            </form>
+            <datalist id="street-options"></datalist>
+            <p class="search-hint" id="search-hint" aria-live="polite" hidden></p>
+
+            <section class="filters" aria-labelledby="filters-heading">
+                <div class="section-head">
+                    <h2 id="filters-heading">Filters</h2>
+                    <button class="text-btn" id="reset-filters" type="button" hidden>Reset all</button>
                 </div>
-                <div class="legend-item">
-                    <span class="color-box medium"></span>
-                    <span>Medium (5K-15K)</span>
+                <div class="filter-grid">
+                    <label for="traffic-filter">Traffic level
+                        <select id="traffic-filter"></select>
+                    </label>
+                    <label for="class-filter">Road type
+                        <select id="class-filter">
+                            <option value="all">All road types</option>
+                        </select>
+                    </label>
                 </div>
-                <div class="legend-item">
-                    <span class="color-box high"></span>
-                    <span>High (15K+)</span>
+                <label class="check" for="truck-only">
+                    <input id="truck-only" type="checkbox">
+                    <span>Truck routes only</span>
+                </label>
+            </section>
+
+            <section class="street-card" id="street-card" aria-live="polite" hidden>
+                <div class="street-card-head">
+                    <div>
+                        <p class="eyebrow">Selected street</p>
+                        <h3 id="street-card-name">—</h3>
+                    </div>
+                    <button class="icon-btn" id="street-card-close" type="button" aria-label="Clear street selection">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                            <path d="m6 6 12 12M18 6 6 18"/>
+                        </svg>
+                    </button>
                 </div>
+                <div class="street-card-stats">
+                    <div>
+                        <strong id="street-card-avg">—</strong>
+                        <span>Average / day</span>
+                    </div>
+                    <div>
+                        <strong id="street-card-peak">—</strong>
+                        <span>Peak segment</span>
+                    </div>
+                    <div>
+                        <strong id="street-card-vkt">—</strong>
+                        <span>Veh-km / day</span>
+                    </div>
+                </div>
+                <p class="street-card-meta" id="street-card-meta"></p>
+            </section>
+
+            <section class="ranking" aria-labelledby="ranking-heading">
+                <div class="section-head ranking-head">
+                    <div>
+                        <h2 id="ranking-heading">Busiest streets</h2>
+                        <p class="section-sub" id="ranking-sub">Length-weighted average volume</p>
+                    </div>
+                    <div class="segmented" role="group" aria-label="Ranking metric">
+                        <button id="metric-avg" type="button" class="is-active" aria-pressed="true">AADT</button>
+                        <button id="metric-vkt" type="button" aria-pressed="false">Veh-km</button>
+                    </div>
+                </div>
+                <ol class="ranking-list" id="street-ranking">
+                    <li class="ranking-empty">Loading streets…</li>
+                </ol>
+            </section>
+
+            <footer class="sidebar-footer">
+                <p class="data-note">
+                    <span class="dot" aria-hidden="true"></span>
+                    Annual average daily traffic (AADT), not live conditions.
+                </p>
+                <details>
+                    <summary>About this data</summary>
+                    <p>
+                        The City of London publishes approximate AADT for each road segment, usually once a
+                        year. AADT is the average number of vehicles passing a point each day over a full year.
+                        Street averages here are weighted by segment length so a single short outlier cannot
+                        make an entire street look busier than it is.
+                    </p>
+                    <p>
+                        Counts are shown as published. A few short segments contain apparent source
+                        anomalies. Use the segment popup to inspect the underlying value.
+                    </p>
+                </details>
+                <p class="source">
+                    Source: <a id="source-link" href="https://opendata.london.ca/datasets/6e425a70e4e24d2ab47e099c4720a80c_21/about" target="_blank" rel="noopener">City of London Open Data</a>.
+                    City data <span id="data-vintage">—</span> · refreshed <span id="refreshed-date">—</span>.
+                    <a id="license-link" href="https://london.maps.arcgis.com/sharing/rest/content/items/e31458fd0c7e41dd9f93144a9550781d/data" target="_blank" rel="noopener">Terms</a>.
+                    <a href="data/traffic.geojson" download>Download GeoJSON</a>.
+                </p>
+            </footer>
+        </aside>
+
+        <main class="map-shell" aria-label="Traffic map of London, Ontario">
+            <div id="map"></div>
+
+            <button class="map-menu" id="sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="false">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                    <path d="M4 7h16M4 12h16M4 17h10"/>
+                </svg>
+                Explore
+            </button>
+
+            <div class="map-badge" id="map-badge" title="Annual average daily traffic">
+                <span class="dot" aria-hidden="true"></span>
+                AADT · <span id="map-vintage">—</span>
             </div>
-        </div>
-        
-        <footer>
-            <p>Data: <a href="https://opendata.london.ca/" target="_blank">City of London Open Data</a></p>
-            <p>Built with <a href="https://leafletjs.com/" target="_blank">Leaflet</a></p>
-        </footer>
+
+            <button class="map-reset" id="reset-view" type="button" aria-label="Reset map view" title="Reset map view">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/>
+                    <circle cx="12" cy="12" r="2.5"/>
+                </svg>
+            </button>
+
+            <section class="legend" id="legend" aria-label="Traffic volume legend and filters">
+                <div class="legend-head">
+                    <span>Avg daily traffic</span>
+                    <span>veh / day</span>
+                </div>
+                <div class="legend-items" id="legend-items"></div>
+            </section>
+
+            <div class="map-status" id="map-status" role="status" aria-live="polite">
+                <span class="spinner" aria-hidden="true"></span>
+                <span>Loading City of London traffic data…</span>
+            </div>
+
+            <div class="empty-state" id="empty-state" hidden>
+                <h2>No segments match those filters</h2>
+                <p>Try widening the traffic level or road type.</p>
+                <button class="primary-btn" id="empty-reset" type="button">Reset filters</button>
+            </div>
+
+            <div class="error-state" id="error-state" hidden>
+                <h2>Traffic data did not load</h2>
+                <p id="error-message">The data file could not be read.</p>
+                <button class="primary-btn" id="error-retry" type="button">Try again</button>
+            </div>
+        </main>
+
+        <div class="backdrop" id="backdrop" hidden></div>
     </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="script.js"></script>
+    <noscript>
+        <p class="noscript">This traffic map needs JavaScript to display the road data.</p>
+    </noscript>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
